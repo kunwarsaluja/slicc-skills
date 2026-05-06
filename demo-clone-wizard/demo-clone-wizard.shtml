@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo Clone Wizard</title>
+  <link rel="icon" href="git-branch" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      background: var(--s2-bg-base);
+      font-family: inherit;
+      margin: 0;
+      padding: var(--s2-spacing-400);
+      min-height: 100vh;
+    }
+
+    .wizard-wrap {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    /* Step Indicator */
+    .step-indicator {
+      display: flex;
+      align-items: center;
+      margin-bottom: var(--s2-spacing-500);
+    }
+    .step-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      position: relative;
+    }
+    .step-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--s2-radius-pill);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background 0.2s, color 0.2s;
+      position: relative;
+      z-index: 1;
+    }
+    .step-dot--future {
+      background: var(--s2-bg-elevated);
+      color: var(--s2-text-secondary, var(--uxc-secondary-text));
+      border: 2px solid var(--s2-border-default, var(--uxc-border-default));
+    }
+    .step-dot--active {
+      background: var(--s2-accent);
+      color: var(--s2-gray-25);
+      border: 2px solid var(--s2-accent);
+    }
+    .step-dot--done {
+      background: var(--s2-positive);
+      color: var(--s2-gray-25);
+      border: 2px solid var(--s2-positive);
+    }
+    .step-dot--done .step-num { display: none; }
+    .step-dot--done .step-check { display: block; }
+    .step-check { display: none; }
+    .step-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--s2-text-secondary, var(--uxc-secondary-text));
+      white-space: nowrap;
+    }
+    .step-item--active .step-label {
+      color: var(--s2-accent);
+      font-weight: 600;
+    }
+    .step-item--done .step-label {
+      color: var(--s2-positive);
+    }
+    .step-connector {
+      flex: 1;
+      height: 2px;
+      background: var(--s2-bg-elevated);
+      margin: 0 4px;
+      margin-bottom: 20px;
+      transition: background 0.2s;
+    }
+    .step-connector--done {
+      background: var(--s2-positive);
+    }
+    .step-connector--active {
+      background: color-mix(in srgb, var(--s2-accent) 40%, transparent);
+    }
+
+    /* Card */
+    .wizard-card {
+      background: var(--s2-bg-elevated);
+      box-shadow: var(--s2-shadow-container);
+      border-radius: var(--s2-radius-l);
+      padding: var(--s2-spacing-500);
+    }
+
+    .wizard-step { display: none; }
+    .wizard-step--active { display: block; }
+
+    /* Step header */
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: var(--s2-spacing-200);
+      margin-bottom: var(--s2-spacing-200);
+    }
+    .step-header-icon {
+      color: var(--s2-accent);
+    }
+
+    .wizard-card h2.sprinkle-heading {
+      margin: 0 0 var(--s2-spacing-100) 0;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--s2-spacing-300);
+      margin: var(--s2-spacing-400) 0;
+    }
+    .field-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--s2-text-default, var(--uxc-primary-text));
+    }
+
+    .info-note {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--s2-spacing-100);
+      padding: var(--s2-spacing-200) var(--s2-spacing-300);
+      background: color-mix(in srgb, var(--s2-accent) 6%, transparent);
+      border-radius: var(--s2-radius-default);
+      border-left: 3px solid var(--s2-accent);
+      margin: var(--s2-spacing-300) 0;
+    }
+    .info-note-icon { color: var(--s2-accent); flex-shrink: 0; margin-top: 1px; }
+    .info-note p { margin: 0; font-size: 13px; color: var(--s2-text-default, var(--uxc-primary-text)); }
+
+    /* Button row */
+    .btn-row {
+      display: flex;
+      align-items: center;
+      gap: var(--s2-spacing-200);
+      margin-top: var(--s2-spacing-400);
+      flex-wrap: wrap;
+    }
+    .btn-row--end {
+      justify-content: flex-end;
+    }
+    .btn-row--between {
+      justify-content: space-between;
+    }
+
+    /* Status indicators */
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: var(--s2-spacing-200);
+      padding: var(--s2-spacing-200) 0;
+    }
+    .status-label {
+      font-size: 13px;
+      color: var(--s2-text-secondary, var(--uxc-secondary-text));
+      min-width: 100px;
+    }
+
+    /* URL display */
+    .url-display {
+      font-family: monospace;
+      font-size: 12px;
+      padding: var(--s2-spacing-100) var(--s2-spacing-200);
+      background: var(--s2-bg-layer-2);
+      border-radius: var(--s2-radius-default);
+      color: var(--s2-text-default, var(--uxc-primary-text));
+      word-break: break-all;
+    }
+
+    /* Toast */
+    #toast-container {
+      position: fixed;
+      bottom: var(--s2-spacing-400);
+      right: var(--s2-spacing-400);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: var(--s2-spacing-100);
+      pointer-events: none;
+    }
+    .toast {
+      background: var(--s2-bg-elevated);
+      box-shadow: var(--s2-shadow-elevated);
+      border-radius: var(--s2-radius-l);
+      padding: var(--s2-spacing-200) var(--s2-spacing-300);
+      display: flex;
+      align-items: center;
+      gap: var(--s2-spacing-100);
+      font-size: 13px;
+      font-weight: 500;
+      min-width: 240px;
+      animation: toast-in 0.2s ease;
+      pointer-events: auto;
+    }
+    .toast--positive { border-left: 3px solid var(--s2-positive); }
+    .toast--negative { border-left: 3px solid var(--s2-negative); }
+    .toast--notice  { border-left: 3px solid var(--s2-notice); }
+    .toast-icon--positive { color: var(--s2-positive); }
+    .toast-icon--negative { color: var(--s2-negative); }
+    .toast-icon--notice   { color: var(--s2-notice); }
+    .toast.fade-out { animation: toast-out 0.4s ease forwards; }
+    @keyframes toast-in  { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    @keyframes toast-out { from { opacity: 1; } to { opacity: 0; transform: translateY(4px); } }
+  </style>
+</head>
+<body>
+  <div class="wizard-wrap">
+
+    <!-- Step Indicator -->
+    <div class="step-indicator" id="stepIndicator">
+      <!-- Rendered by JS -->
+    </div>
+
+    <!-- Wizard Card -->
+    <div class="wizard-card">
+
+      <!-- Step 1: Repository Setup -->
+      <div class="wizard-step wizard-step--active" id="step1">
+        <div class="step-header">
+          <i data-lucide="git-branch" class="sprinkle-icon sprinkle-icon--l step-header-icon"></i>
+          <h2 class="sprinkle-heading">Create Your Repository</h2>
+        </div>
+        <p class="sprinkle-body">Clone the scdemos/demo template into your own GitHub account.</p>
+
+        <div class="field-group">
+          <div>
+            <label class="field-label" for="ownerInput">GitHub Username or Organization</label>
+            <input
+              type="text"
+              id="ownerInput"
+              class="sprinkle-text-field"
+              placeholder="e.g. my-org"
+              style="width:100%"
+            />
+          </div>
+          <div>
+            <label class="field-label" for="repoInput">Repository Name</label>
+            <input
+              type="text"
+              id="repoInput"
+              class="sprinkle-text-field"
+              placeholder="e.g. my-demo"
+              value="demo"
+              style="width:100%"
+            />
+          </div>
+        </div>
+
+        <button
+          class="sprinkle-btn sprinkle-btn--primary"
+          style="width:100%"
+          onclick="if(this.dataset.busy) return; this.dataset.busy='1'; setTimeout(()=>delete this.dataset.busy,1500); handleOpenGitHub()"
+        >
+          <i data-lucide="external-link" class="sprinkle-icon"></i>
+          Open GitHub Template
+        </button>
+
+        <div class="info-note">
+          <i data-lucide="info" class="sprinkle-icon info-note-icon"></i>
+          <p>This will open GitHub's Use Template page. After creating your repo, click Continue below.</p>
+        </div>
+
+        <div class="btn-row btn-row--end">
+          <button
+            class="sprinkle-btn"
+            onclick="handleStartOver()"
+            style="margin-right:auto"
+          >
+            <i data-lucide="rotate-ccw" class="sprinkle-icon"></i>
+            Start Over
+          </button>
+          <button
+            class="sprinkle-btn sprinkle-btn--secondary"
+            id="step1Continue"
+            disabled
+            onclick="handleStep1Continue()"
+          >
+            Continue
+            <i data-lucide="arrow-right" class="sprinkle-icon"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 2: Install AEM Code Sync -->
+      <div class="wizard-step" id="step2">
+        <div class="step-header">
+          <i data-lucide="plug" class="sprinkle-icon sprinkle-icon--l step-header-icon"></i>
+          <h2 class="sprinkle-heading">Install AEM Code Sync</h2>
+        </div>
+        <p class="sprinkle-body">The AEM Code Sync GitHub App keeps your repository in sync with Adobe's Edge Delivery Services.</p>
+
+        <dl class="sprinkle-kv-list" style="margin: var(--s2-spacing-300) 0;">
+          <dt>Owner</dt>
+          <dd id="s2-owner">—</dd>
+          <dt>Repository</dt>
+          <dd id="s2-repo">—</dd>
+        </dl>
+
+        <button
+          class="sprinkle-btn sprinkle-btn--primary"
+          style="width:100%"
+          onclick="if(this.dataset.busy) return; this.dataset.busy='1'; setTimeout(()=>delete this.dataset.busy,1500); handleOpenCodesync()"
+        >
+          <i data-lucide="github" class="sprinkle-icon"></i>
+          Install Code Sync App
+        </button>
+
+        <div class="sprinkle-collapsible" id="manualCollapsible" style="margin-top: var(--s2-spacing-300);">
+          <button
+            class="sprinkle-collapsible__header"
+            onclick="document.getElementById('manualCollapsible').classList.toggle('sprinkle-collapsible--open')"
+          >
+            <span class="sprinkle-collapsible__chevron"></span>
+            Manual Instructions
+          </button>
+          <div class="sprinkle-collapsible__body">
+            <ol class="sprinkle-body" style="margin: var(--s2-spacing-100) 0; padding-left: var(--s2-spacing-400); line-height: 1.8;">
+              <li>Go to <span class="url-display" style="display:inline">https://github.com/apps/aem-code-sync/installations/new</span></li>
+              <li>Select your account or organization</li>
+              <li>Choose "Only select repositories" and select your new repo</li>
+              <li>Click Install</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="btn-row btn-row--between" style="margin-top: var(--s2-spacing-400);">
+          <button class="sprinkle-btn sprinkle-btn--secondary" onclick="goToStep(1)">
+            <i data-lucide="arrow-left" class="sprinkle-icon"></i>
+            Back
+          </button>
+          <button class="sprinkle-btn sprinkle-btn--secondary" id="step2Continue" disabled onclick="handleStep2Continue()">
+            Continue
+            <i data-lucide="arrow-right" class="sprinkle-icon"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 3: Migrate DA Content -->
+      <div class="wizard-step" id="step3">
+        <div class="step-header">
+          <i data-lucide="copy" class="sprinkle-icon sprinkle-icon--l step-header-icon"></i>
+          <h2 class="sprinkle-heading">Migrate Demo Content</h2>
+        </div>
+        <p class="sprinkle-body">Copies the entire scdemos/demo content tree to your space in a single DA Copy API call.</p>
+
+        <dl class="sprinkle-kv-list" style="margin: var(--s2-spacing-300) 0;">
+          <dt>Source</dt>
+          <dd><span class="url-display">https://da.live/#/scdemos/demo</span></dd>
+          <dt>Target</dt>
+          <dd><span class="url-display" id="s3-target-url">—</span></dd>
+        </dl>
+
+        <button
+          class="sprinkle-btn sprinkle-btn--primary"
+          style="width:100%; margin-top: var(--s2-spacing-300);"
+          id="copyContentBtn"
+          onclick="if(this.dataset.busy) return; this.dataset.busy='1'; setTimeout(()=>delete this.dataset.busy,10000); handleCopyDaContent()"
+        >
+          <i data-lucide="copy" class="sprinkle-icon"></i>
+          Copy Content
+        </button>
+
+        <div id="da-copy-status" style="margin-top: var(--s2-spacing-200); min-height: 32px;"></div>
+
+        <div class="info-note" style="margin-top: var(--s2-spacing-200);">
+          <i data-lucide="info" class="sprinkle-icon info-note-icon"></i>
+          <p>Run Copy Content to migrate automatically, or click Continue if you have already migrated the content manually.</p>
+        </div>
+
+        <div class="btn-row btn-row--between" style="margin-top: var(--s2-spacing-400);">
+          <button class="sprinkle-btn sprinkle-btn--secondary" onclick="goToStep(2)">
+            <i data-lucide="arrow-left" class="sprinkle-icon"></i>
+            Back
+          </button>
+          <button class="sprinkle-btn sprinkle-btn--secondary" id="step3Continue" disabled onclick="handleStep3Continue()">
+            Continue
+            <i data-lucide="arrow-right" class="sprinkle-icon"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 4: Bulk Preview & Publish -->
+      <div class="wizard-step" id="step4">
+        <div class="step-header">
+          <i data-lucide="rocket" class="sprinkle-icon sprinkle-icon--l step-header-icon"></i>
+          <h2 class="sprinkle-heading">Preview and Publish</h2>
+        </div>
+        <p class="sprinkle-body">Activate your site by triggering a bulk preview and publish of all migrated pages.</p>
+
+        <dl class="sprinkle-kv-list" style="margin: var(--s2-spacing-300) 0;">
+          <dt>Preview URL</dt>
+          <dd><span class="url-display" id="s4-preview-url">—</span></dd>
+          <dt>Publish URL</dt>
+          <dd><span class="url-display" id="s4-publish-url">—</span></dd>
+        </dl>
+
+        <div class="btn-row" style="margin-top: var(--s2-spacing-300);">
+          <button
+            class="sprinkle-btn sprinkle-btn--primary"
+            style="flex:1"
+            onclick="handleBulkPreview()"
+          >
+            <i data-lucide="eye" class="sprinkle-icon"></i>
+            Bulk Preview
+          </button>
+          <button
+            class="sprinkle-btn sprinkle-btn--secondary"
+            style="flex:1"
+            onclick="handleBulkPublish()"
+          >
+            <i data-lucide="send" class="sprinkle-icon"></i>
+            Bulk Publish
+          </button>
+        </div>
+
+        <div class="sprinkle-stack" style="margin-top: var(--s2-spacing-300); gap: var(--s2-spacing-100);">
+          <div class="status-row">
+            <span class="status-label">Preview</span>
+            <span id="previewStatus"></span>
+          </div>
+          <div class="status-row">
+            <span class="status-label">Publish</span>
+            <span id="publishStatus"></span>
+          </div>
+        </div>
+
+        <div class="sprinkle-divider" style="margin: var(--s2-spacing-300) 0;"></div>
+
+        <div class="btn-row btn-row--between">
+          <button class="sprinkle-btn sprinkle-btn--secondary" onclick="goToStep(3)">
+            <i data-lucide="arrow-left" class="sprinkle-icon"></i>
+            Back
+          </button>
+          <div class="sprinkle-btn-group">
+            <button
+              class="sprinkle-btn sprinkle-btn--secondary"
+              id="viewSiteBtn"
+              disabled
+              onclick="if(this.dataset.busy) return; this.dataset.busy='1'; setTimeout(()=>delete this.dataset.busy,1500); handleViewSite()"
+            >
+              <i data-lucide="globe" class="sprinkle-icon"></i>
+              View Live Site
+            </button>
+            <button
+              class="sprinkle-btn sprinkle-btn--primary"
+              onclick="handleWizardDone()"
+            >
+              <i data-lucide="check" class="sprinkle-icon"></i>
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /.wizard-card -->
+  </div><!-- /.wizard-wrap -->
+
+  <div id="toast-container"></div>
+
+  <script>
+    /* ── State (persisted in localStorage) ── */
+    var _savedState = {};
+    try { _savedState = JSON.parse(localStorage.getItem('demo-clone-wizard-state') || '{}'); } catch(e) {}
+    var state = Object.assign({
+      currentStep: 1,
+      owner: '',
+      repo: 'demo',
+      previewTriggered: false,
+      publishTriggered: false,
+      copyDone: false
+    }, _savedState);
+
+    function saveState() {
+      try { localStorage.setItem('demo-clone-wizard-state', JSON.stringify(state)); } catch(e) {}
+    }
+
+    /* ── Global lick dedup: ignore licks fired before this timestamp ── */
+    var _wizardStartTime = Date.now();
+    var _originalLick = slicc.lick.bind(slicc);
+    slicc.lick = function(payload) {
+      if (typeof payload === 'object') {
+        payload._ts = Date.now();
+        payload._wizardStart = _wizardStartTime;
+      }
+      _originalLick(payload);
+    };
+
+    var STEPS = [
+      { label: 'Repository' },
+      { label: 'Code Sync' },
+      { label: 'Content' },
+      { label: 'Publish' }
+    ];
+
+    /* ── Step Indicator ── */
+    function renderStepIndicator() {
+      var el = document.getElementById('stepIndicator');
+      var html = '';
+      for (var i = 0; i < STEPS.length; i++) {
+        var n = i + 1;
+        var isDone = n < state.currentStep;
+        var isActive = n === state.currentStep;
+        var dotClass = isDone ? 'step-dot--done' : isActive ? 'step-dot--active' : 'step-dot--future';
+        var itemClass = isDone ? 'step-item--done' : isActive ? 'step-item--active' : '';
+        html += '<div class="step-item ' + itemClass + '">';
+        html += '<div class="step-dot ' + dotClass + '">';
+        html += '<span class="step-num">' + n + '</span>';
+        html += '<i data-lucide="check" class="sprinkle-icon sprinkle-icon--s step-check"></i>';
+        html += '</div>';
+        html += '<span class="step-label">' + STEPS[i].label + '</span>';
+        html += '</div>';
+        if (i < STEPS.length - 1) {
+          var connClass = isDone ? 'step-connector--done' : (isActive ? 'step-connector--active' : '');
+          html += '<div class="step-connector ' + connClass + '"></div>';
+        }
+      }
+      el.innerHTML = html;
+      LucideIcons.render();
+    }
+
+    /* ── Step Navigation ── */
+    function goToStep(n) {
+      state.currentStep = n;
+      saveState();
+      document.querySelectorAll('.wizard-step').forEach(function(el, i) {
+        el.classList.toggle('wizard-step--active', i + 1 === n);
+      });
+      renderStepIndicator();
+      updateOwnerRepoDisplay();
+      if (n === 4) updateStep4UI();
+    }
+
+    /* ── Owner/Repo Display ── */
+    function updateOwnerRepoDisplay() {
+      var o = state.owner || '—';
+      var r = state.repo || '—';
+
+      var s2Owner = document.getElementById('s2-owner');
+      var s2Repo = document.getElementById('s2-repo');
+      if (s2Owner) s2Owner.textContent = o;
+      if (s2Repo) s2Repo.textContent = r;
+
+      var s3Target = document.getElementById('s3-target-url');
+      if (s3Target) {
+        s3Target.textContent = state.owner
+          ? 'https://da.live/#/' + state.owner + '/' + state.repo
+          : '—';
+      }
+
+      var s4Preview = document.getElementById('s4-preview-url');
+      if (s4Preview) {
+        s4Preview.textContent = state.owner
+          ? 'https://admin.hlx.page/preview/' + state.owner + '/' + state.repo + '/main/*'
+          : '—';
+      }
+      var s4Publish = document.getElementById('s4-publish-url');
+      if (s4Publish) {
+        s4Publish.textContent = state.owner
+          ? 'https://admin.hlx.page/publish/' + state.owner + '/' + state.repo + '/main/*'
+          : '—';
+      }
+    }
+
+    /* ── Step 4 UI ── */
+    function updateStep4UI() {
+      var previewEl = document.getElementById('previewStatus');
+      var publishEl = document.getElementById('publishStatus');
+      var viewBtn = document.getElementById('viewSiteBtn');
+
+      if (previewEl) {
+        previewEl.innerHTML = state.previewTriggered
+          ? '<span class="sprinkle-badge sprinkle-badge--subtle sprinkle-badge--positive"><i data-lucide="check" class="sprinkle-icon sprinkle-icon--xs"></i> Triggered</span>'
+          : '<span class="sprinkle-detail">Not started</span>';
+      }
+      if (publishEl) {
+        publishEl.innerHTML = state.publishTriggered
+          ? '<span class="sprinkle-badge sprinkle-badge--subtle sprinkle-badge--positive"><i data-lucide="check" class="sprinkle-icon sprinkle-icon--xs"></i> Triggered</span>'
+          : '<span class="sprinkle-detail">Not started</span>';
+      }
+      if (viewBtn) {
+        viewBtn.disabled = !(state.previewTriggered && state.publishTriggered);
+      }
+      LucideIcons.render();
+    }
+
+    /* ── Step 1 Input Listeners ── */
+    var ownerInput = document.getElementById('ownerInput');
+    var repoInput = document.getElementById('repoInput');
+    var step1Continue = document.getElementById('step1Continue');
+
+    function checkStep1Fields() {
+      var filled = ownerInput.value.trim() !== '' && repoInput.value.trim() !== '';
+      step1Continue.disabled = !filled;
+      state.owner = ownerInput.value.trim();
+      state.repo = repoInput.value.trim() || 'demo';
+    }
+
+    ownerInput.addEventListener('input', checkStep1Fields);
+    repoInput.addEventListener('input', checkStep1Fields);
+    // Trigger initial check (repo has default value)
+    checkStep1Fields();
+
+    /* ── Debounce guard — prevents multi-fire on double-click ── */
+    var _lickBusy = {};
+    function onceLick(key, payload, cooldown) {
+      if (_lickBusy[key]) return;
+      _lickBusy[key] = true;
+      slicc.lick(payload);
+      setTimeout(function() { delete _lickBusy[key]; }, cooldown || 10000);
+    }
+    function fireLick(key, payload) {
+      // "fire once" per page load — in-memory only, no sessionStorage
+      if (_lickBusy[key]) return;
+      _lickBusy[key] = true;
+      _originalLick(payload);
+    }
+
+    /* ── Action Handlers ── */
+    function handleOpenGitHub() {
+      var owner = ownerInput.value.trim();
+      var repo = repoInput.value.trim() || 'demo';
+      onceLick('open-github', {
+        action: 'open-github',
+        data: { owner: owner, repo: repo }
+      }, 3000);
+    }
+
+    function handleStep1Continue() {
+      state.owner = ownerInput.value.trim();
+      state.repo = repoInput.value.trim() || 'demo';
+      fireLick('step1-complete', {
+        action: 'step1-complete',
+        data: { owner: state.owner, repo: state.repo }
+      });
+    }
+
+    function handleOpenCodesync() {
+      onceLick('open-codesync', {
+        action: 'open-codesync',
+        data: { owner: state.owner, repo: state.repo }
+      }, 10000);
+      setTimeout(function() {
+        var b = document.getElementById('step2Continue');
+        if (b) { delete b.dataset.fired; b.disabled = false; }
+      }, 1500);
+    }
+
+    function handleStep2Continue() {
+      fireLick('step2-complete', {
+        action: 'step2-complete',
+        data: { owner: state.owner, repo: state.repo }
+      });
+    }
+
+    function handleCopyDaContent() {
+      slicc.lick({
+        action: 'copy-da-content',
+        data: { owner: state.owner, repo: state.repo }
+      });
+    }
+
+    function setCopyStatus(html) {
+      var el = document.getElementById('da-copy-status');
+      if (el) { el.innerHTML = html; LucideIcons.render(); }
+    }
+
+    function handleStep3Continue() {
+      fireLick('step3-complete', {
+        action: 'step3-complete',
+        data: { owner: state.owner, repo: state.repo }
+      });
+    }
+
+    function handleBulkPreview() {
+      onceLick('bulk-preview', {
+        action: 'bulk-preview',
+        data: { owner: state.owner, repo: state.repo }
+      }, 5000);
+    }
+
+    function handleBulkPublish() {
+      onceLick('bulk-publish', {
+        action: 'bulk-publish',
+        data: { owner: state.owner, repo: state.repo }
+      }, 5000);
+    }
+
+    function handleViewSite() {
+      onceLick('view-site', {
+        action: 'view-site',
+        data: { owner: state.owner, repo: state.repo }
+      }, 3000);
+    }
+
+    function handleWizardDone() {
+      fireLick('wizard-done', { action: 'wizard-done' });
+    }
+
+    function handleStartOver() {
+      // Clear all state and restart from step 1
+      localStorage.removeItem('demo-clone-wizard-state');
+      Object.assign(state, {
+        currentStep: 1, owner: '', repo: 'demo',
+        previewTriggered: false, publishTriggered: false, copyDone: false
+      });
+      // Clear all dedup flags
+      Object.keys(_lickBusy).forEach(function(k) { delete _lickBusy[k]; });
+      if (ownerInput) ownerInput.value = '';
+      if (repoInput) repoInput.value = 'demo';
+      checkStep1Fields();
+      goToStep(1);
+      showToast('Wizard reset — start fresh', 'notice');
+    }
+
+    /* ── Toast ── */
+    function showToast(message, type) {
+      type = type || 'notice';
+      var iconMap = {
+        positive: 'check-circle',
+        negative: 'alert-circle',
+        notice: 'info'
+      };
+      var container = document.getElementById('toast-container');
+      var toast = document.createElement('div');
+      toast.className = 'toast toast--' + type;
+      toast.innerHTML =
+        '<i data-lucide="' + (iconMap[type] || 'info') + '" class="sprinkle-icon toast-icon--' + type + '"></i>' +
+        '<span>' + message + '</span>';
+      container.appendChild(toast);
+      LucideIcons.render();
+      setTimeout(function() {
+        toast.classList.add('fade-out');
+        setTimeout(function() { toast.remove(); }, 400);
+      }, 3000);
+    }
+
+    /* ── Slicc Update Handler ── */
+    slicc.on('update', function(data) {
+      if (data.action === 'step-update') {
+        goToStep(data.step);
+      }
+      if (data.action === 'status') {
+        showToast(data.message, data.type);
+      }
+      if (data.action === 'preview-triggered') {
+        state.previewTriggered = true;
+        saveState();
+        // Clear dedup so button can be re-used
+        delete _lickBusy['bulk-preview'];
+        updateStep4UI();
+      }
+      if (data.action === 'publish-triggered') {
+        state.publishTriggered = true;
+        saveState();
+        delete _lickBusy['bulk-publish'];
+        updateStep4UI();
+      }
+      if (data.action === 'reset-step4') {
+        state.previewTriggered = false;
+        state.publishTriggered = false;
+        delete _lickBusy['bulk-preview'];
+        delete _lickBusy['bulk-publish'];
+        saveState();
+        updateStep4UI();
+      }
+      if (data.action === 'set-state') {
+        state.owner = data.owner;
+        state.repo = data.repo;
+        saveState();
+        updateOwnerRepoDisplay();
+      }
+      if (data.action === 'copy-progress') {
+        setCopyStatus(
+          '<span class="sprinkle-badge sprinkle-badge--subtle sprinkle-badge--notice">' +
+          '<i data-lucide="loader" class="sprinkle-icon sprinkle-icon--xs"></i> ' +
+          (data.message || 'Working...') + '</span>'
+        );
+      }
+      if (data.action === 'copy-done') {
+        var count = data.count || 0;
+        state.copyDone = true;
+        saveState();
+        setCopyStatus(
+          '<span class="sprinkle-badge sprinkle-badge--subtle sprinkle-badge--positive">' +
+          '<i data-lucide="check-circle" class="sprinkle-icon sprinkle-icon--xs"></i> ' +
+          'Copied ' + count + ' item' + (count !== 1 ? 's' : '') + ' successfully</span>'
+        );
+        // Re-enable Continue and clear in-memory dedup so it can fire
+        var btn = document.getElementById('step3Continue');
+        if (btn) { btn.disabled = false; }
+        delete _lickBusy['step3-complete'];
+        // Reset the copy button busy state
+        var copyBtn = document.getElementById('copyContentBtn');
+        if (copyBtn) delete copyBtn.dataset.busy;
+      }
+      if (data.action === 'copy-error') {
+        setCopyStatus(
+          '<span class="sprinkle-badge sprinkle-badge--subtle sprinkle-badge--negative">' +
+          '<i data-lucide="alert-circle" class="sprinkle-icon sprinkle-icon--xs"></i> ' +
+          (data.message || 'Copy failed') + '</span>'
+        );
+        // Release the busy lock so user can retry
+        var copyBtn = document.getElementById('copyContentBtn');
+        if (copyBtn) delete copyBtn.dataset.busy;
+      }
+      if (data.action === 'codesync-opened') {
+        var b = document.getElementById('step2Continue');
+        if (b) { delete b.dataset.fired; b.disabled = false; }
+      }
+      if (data.action === 'hard-reset') {
+        state.owner = data.owner || state.owner;
+        state.repo = data.repo || state.repo;
+        state.currentStep = data.step || state.currentStep;
+        saveState();
+        if (ownerInput) ownerInput.value = state.owner;
+        if (repoInput) repoInput.value = state.repo;
+        checkStep1Fields();
+        goToStep(state.currentStep);
+        showToast('Restored to step ' + state.currentStep, 'notice');
+      }
+    });
+
+    /* ── Init — restore persisted state, or start fresh ── */
+    if (state.owner && ownerInput) ownerInput.value = state.owner;
+    if (state.repo && repoInput) repoInput.value = state.repo;
+    checkStep1Fields();
+    goToStep(state.currentStep || 1);
+    if (state.currentStep === 4) updateStep4UI();
+    if (state.copyDone) {
+      setCopyStatus(
+        '<span class="sprinkle-badge sprinkle-badge--subtle sprinkle-badge--positive">' +
+        '<i data-lucide="check-circle" class="sprinkle-icon sprinkle-icon--xs"></i> Content copied successfully</span>'
+      );
+      var s3btn = document.getElementById('step3Continue');
+      if (s3btn) { s3btn.disabled = false; }
+    }
+    LucideIcons.render();
+  </script>
+</body>
+</html>
